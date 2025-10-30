@@ -1,3 +1,5 @@
+数据集地址：通过网盘分享的文件：垃圾图片数据集.zip
+链接: https://pan.baidu.com/s/1PqwIYMdh0XDeroKeoz_sXQ 提取码: qj5s
 
 ```markdown
 # 垃圾分类识别系统
