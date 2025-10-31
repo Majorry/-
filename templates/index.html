@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能垃圾分类识别系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .preview-section.show {
+            display: block;
+        }
+
+        .image-preview {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            color: white;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .result-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .result-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .result-class {
+            font-size: 42px;
+            font-weight: 700;
+        }
+
+        .result-confidence {
+            text-align: right;
+        }
+
+        .confidence-value {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .confidence-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .result-description {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .description-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .probabilities {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .probabilities h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .prob-item {
+            margin-bottom: 15px;
+        }
+
+        .prob-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .prob-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .prob-value {
+            color: #666;
+        }
+
+        .prob-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .prob-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        /* 反馈区域样式 */
+        .feedback-section {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .feedback-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .feedback-question {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .feedback-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .feedback-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .feedback-btn:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .feedback-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .feedback-detail {
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .feedback-detail.show {
+            display: block;
+        }
+
+        .feedback-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .feedback-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .feedback-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .feedback-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        .feedback-success {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .feedback-success.show {
+            display: block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffe0e0;
+            color: #d32f2f;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: none;
+            animation: slideInRight 0.3s ease;
+            z-index: 10000;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .result-main {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .result-confidence {
+                text-align: center;
+            }
+
+            .feedback-buttons {
+                flex-direction: column;
+            }
+        }
+
+        /* 环保宣传弹窗样式 */
+        .eco-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.4s ease;
+            z-index: 9999;
+        }
+
+        .eco-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 40px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease;
+        }
+
+        .eco-content h2 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .eco-content p {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .eco-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .eco-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .eco-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .eco-btn:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗑️ 智能垃圾分类识别系统</h1>
+            <button class="nav-btn" onclick="window.location.href='/history'">📊 历史记录</button>
+        </div>
+        <p class="subtitle">基于深度学习的垃圾分类图像识别</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">点击或拖拽图片到这里</div>
+            <div class="upload-hint">支持 JPG、PNG 格式，最大 16MB</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>正在识别中...</div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="preview-section" id="previewSection">
+            <div class="image-preview">
+                <img id="previewImg" class="preview-img" alt="预览图片">
+            </div>
+
+            <div class="result-card" id="resultCard">
+                <div class="result-title">识别结果</div>
+                <div class="result-main">
+                    <div class="result-class" id="resultClass">厨余垃圾</div>
+                    <div class="result-confidence">
+                        <div class="confidence-value" id="confidenceValue">95.8%</div>
+                        <div class="confidence-label">置信度</div>
+                    </div>
+                </div>
+                <div class="result-description">
+                    <div class="description-label">类别说明</div>
+                    <div id="classDescription">易腐烂的生物质废弃物</div>
+                </div>
+                <div class="result-description">
+                    <div class="description-label">常见示例</div>
+                    <div id="classExamples">剩菜剩饭、瓜皮果核、花卉绿植等</div>
+                </div>
+            </div>
+
+            <div class="probabilities">
+                <h3>各类别概率分布</h3>
+                <div id="probabilitiesList"></div>
+            </div>
+
+            <!-- 反馈区域 -->
+            <div class="feedback-section" id="feedbackSection">
+                <div class="feedback-title">💬 帮助我们改进</div>
+                <div class="feedback-question">这个识别结果准确吗？</div>
+
+                <div class="feedback-buttons">
+                    <button class="feedback-btn" onclick="selectFeedback('correct')">
+                        <span>👍</span> 准确
+                    </button>
+                    <button class="feedback-btn" onclick="selectFeedback('incorrect')">
+                        <span>👎</span> 不准确
+                    </button>
+                </div>
+
+                <div class="feedback-detail" id="incorrectDetail">
+                    <label style="display: block; margin-bottom: 8px; color: #666; font-size: 14px;">
+                        请选择正确的类别：
+                    </label>
+                    <select class="feedback-select" id="correctClassSelect">
+                        <option value="">-- 请选择 --</option>
+                        <option value="厨余垃圾">厨余垃圾</option>
+                        <option value="可回收物">可回收物</option>
+                        <option value="其他垃圾">其他垃圾</option>
+                        <option value="有害垃圾">有害垃圾</option>
+                    </select>
+                </div>
+
+                <div class="feedback-detail" id="commentDetail">
+                    <label style="display: block; margin-bottom: 8px; color: #666; font-size: 14px;">
+                        补充说明（可选）：
+                    </label>
+                    <textarea class="feedback-textarea" id="feedbackComment"
+                              placeholder="您可以补充一些说明，帮助我们改进系统..."></textarea>
+                    <button class="feedback-submit" onclick="submitFeedback()">提交反馈</button>
+                </div>
+
+                <div class="feedback-success" id="feedbackSuccess">
+                    ✅ 感谢您的反馈！这将帮助我们改进系统。
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="uploadAnother()">识别其他图片</button>
+                <button class="btn btn-secondary" onclick="resetAll()">清空结果</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast提示 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 环保宣传弹窗 -->
+    <div id="ecoModal" class="eco-modal">
+        <div class="eco-content">
+            <h2>♻️ 垃圾分类，让城市更美丽！</h2>
+            <p>每一次分类投放，都是对地球的一次温柔守护。绿色低碳转型，不仅关乎生态环境，更关乎我们的未来与可持续发展。</p>
+            <a href="https://www.gov.cn/zhengce/202408/content_6967663.htm" target="_blank" class="eco-link">
+                阅读政策：推进绿色低碳转型的重要意义
+            </a>
+            <button class="eco-btn" onclick="closeEcoModal()">我知道了</button>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const previewImg = document.getElementById('previewImg');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+
+        let currentRecordId = null;
+        let currentFeedbackType = null;
+
+        // 点击上传区域
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // 文件选择
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        // 拖拽上传
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        // 处理文件
+        function handleFile(file) {
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showError('请上传图片文件！');
+                return;
+            }
+
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // 上传并识别
+            uploadAndPredict(file);
+        }
+
+        // 上传并预测
+        async function uploadAndPredict(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            loading.classList.add('show');
+            errorMessage.classList.remove('show');
+            previewSection.classList.remove('show');
+            resetFeedback();
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentRecordId = data.record_id;
+                    displayResult(data);
+                } else {
+                    showError(data.error || '识别失败，请重试');
+                }
+            } catch (error) {
+                showError('网络错误：' + error.message);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // 显示结果
+        function displayResult(data) {
+            document.getElementById('resultClass').textContent = data.class_name;
+            document.getElementById('confidenceValue').textContent = data.confidence.toFixed(1) + '%';
+            document.getElementById('classDescription').textContent = data.class_info.description;
+            document.getElementById('classExamples').textContent = data.class_info.examples;
+
+            // 设置结果卡片颜色
+            const resultCard = document.getElementById('resultCard');
+            const color = data.class_info.color;
+            resultCard.style.background = `linear-gradient(135deg, ${color} 0%, ${adjustColor(color, -20)} 100%)`;
+
+            // 显示概率分布
+            const probsList = document.getElementById('probabilitiesList');
+            probsList.innerHTML = '';
+
+            const sortedProbs = Object.entries(data.all_probabilities).sort((a, b) => b[1] - a[1]);
+
+            sortedProbs.forEach(([className, prob]) => {
+                const probItem = document.createElement('div');
+                probItem.className = 'prob-item';
+                probItem.innerHTML = `
+                    <div class="prob-header">
+                        <span class="prob-name">${className}</span>
+                        <span class="prob-value">${prob.toFixed(1)}%</span>
+                    </div>
+                    <div class="prob-bar">
+                        <div class="prob-fill" style="width: ${prob}%"></div>
+                    </div>
+                `;
+                probsList.appendChild(probItem);
+            });
+
+            previewSection.classList.add('show');
+        }
+
+        // 选择反馈类型
+        function selectFeedback(type) {
+            currentFeedbackType = type;
+
+            // 更新按钮状态
+            document.querySelectorAll('.feedback-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.feedback-btn').classList.add('active');
+
+            // 显示相应的详情区域
+            const incorrectDetail = document.getElementById('incorrectDetail');
+            const commentDetail = document.getElementById('commentDetail');
+
+            if (type === 'incorrect') {
+                incorrectDetail.classList.add('show');
+                commentDetail.classList.add('show');
+            } else {
+                incorrectDetail.classList.remove('show');
+                commentDetail.classList.add('show');
+            }
+        }
+
+        // 提交反馈
+        async function submitFeedback() {
+            if (!currentRecordId || !currentFeedbackType) {
+                showToast('请先选择反馈类型', 'error');
+                return;
+            }
+
+            const correctClass = document.getElementById('correctClassSelect').value;
+            const comment = document.getElementById('feedbackComment').value;
+
+            if (currentFeedbackType === 'incorrect' && !correctClass) {
+                showToast('请选择正确的类别', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        classification_id: currentRecordId,
+                        feedback_type: currentFeedbackType,
+                        correct_class: correctClass || null,
+                        comment: comment
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // 显示成功消息
+                    document.getElementById('feedbackSuccess').classList.add('show');
+                    document.getElementById('commentDetail').classList.remove('show');
+                    document.getElementById('incorrectDetail').classList.remove('show');
+                    document.querySelectorAll('.feedback-btn').forEach(btn => {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.6';
+                    });
+                    showToast('感谢您的反馈！', 'success');
+                } else {
+                    showToast(data.message || '反馈提交失败', 'error');
+                }
+            } catch (error) {
+                showToast('网络错误：' + error.message, 'error');
+            }
+        }
+
+        // 重置反馈区域
+        function resetFeedback() {
+            currentFeedbackType = null;
+            document.querySelectorAll('.feedback-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            });
+            document.getElementById('incorrectDetail').classList.remove('show');
+            document.getElementById('commentDetail').classList.remove('show');
+            document.getElementById('feedbackSuccess').classList.remove('show');
+            document.getElementById('correctClassSelect').value = '';
+            document.getElementById('feedbackComment').value = '';
+        }
+
+        // Toast提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = type === 'success' ? '#4CAF50' : '#f44336';
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 调整颜色亮度
+        function adjustColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 +
+                (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255))
+                .toString(16).slice(1);
+        }
+
+        // 显示错误
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        // 上传其他图片
+        function uploadAnother() {
+            fileInput.click();
+        }
+
+        // 重置所有
+        function resetAll() {
+            previewSection.classList.remove('show');
+            fileInput.value = '';
+            errorMessage.classList.remove('show');
+            resetFeedback();
+        }
+
+        // 环保宣传弹窗
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('ecoModal').style.display = 'flex';
+            }, 800);
+        });
+
+        function closeEcoModal() {
+            const modal = document.getElementById('ecoModal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+    </script>
+</body>
+</html>

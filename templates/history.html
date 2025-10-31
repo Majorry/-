@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>识别历史记录 - 智能垃圾分类系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .history-item {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .history-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f5f5f5;
+        }
+
+        .history-content {
+            padding: 15px;
+        }
+
+        .history-class {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .history-confidence {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #4CAF50;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .history-time {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .empty-text {
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .empty-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .empty-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 类别标签颜色 */
+        .class-kitchen { background: #8BC34A; }
+        .class-recyclable { background: #2196F3; }
+        .class-other { background: #9E9E9E; }
+        .class-hazardous { background: #F44336; }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .history-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>📊 识别历史记录</h1>
+                <button class="back-btn" onclick="window.location.href='/'">← 返回识别</button>
+            </div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-icon">🔢</div>
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">总识别次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👍</div>
+                <div class="stat-value" id="correctCount">0</div>
+                <div class="stat-label">准确反馈</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value" id="accuracyRate">0%</div>
+                <div class="stat-label">准确率</div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="section-title">最近识别记录</div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>加载中...</div>
+            </div>
+
+            <div class="history-grid" id="historyGrid" style="display: none;"></div>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">还没有识别记录</div>
+                <button class="empty-btn" onclick="window.location.href='/'">开始识别</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载统计数据
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/statistics');
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const stats = result.data;
+                    document.getElementById('totalCount').textContent = stats.total_classifications;
+                    document.getElementById('correctCount').textContent = stats.correct_feedback;
+
+                    // 计算准确率
+                    const totalFeedback = stats.correct_feedback + stats.incorrect_feedback;
+                    const accuracy = totalFeedback > 0 ?
+                        (stats.correct_feedback / totalFeedback * 100).toFixed(1) : 0;
+                    document.getElementById('accuracyRate').textContent = accuracy + '%';
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+
+        // 加载历史记录
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history?limit=50');
+                const result = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (result.status === 'success' && result.data.length > 0) {
+                    displayHistory(result.data);
+                } else {
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('加载历史记录失败:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+
+        // 显示历史记录
+        function displayHistory(records) {
+            const historyGrid = document.getElementById('historyGrid');
+            historyGrid.style.display = 'grid';
+            historyGrid.innerHTML = '';
+
+            records.forEach(record => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+
+                // 格式化时间
+                const date = new Date(record.timestamp);
+                const timeStr = date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // 获取类别对应的CSS类
+                const classMap = {
+                    '厨余垃圾': 'class-kitchen',
+                    '可回收物': 'class-recyclable',
+                    '其他垃圾': 'class-other',
+                    '有害垃圾': 'class-hazardous'
+                };
+                const classColor = classMap[record.predicted_class] || '';
+
+                item.innerHTML = `
+                    <img src="/${record.image_path}" class="history-image" alt="${record.predicted_class}">
+                    <div class="history-content">
+                        <div class="history-class">${record.predicted_class}</div>
+                        <div class="history-confidence ${classColor}">
+                            置信度: ${record.confidence.toFixed(1)}%
+                        </div>
+                        <div class="history-time">🕐 ${timeStr}</div>
+                    </div>
+                `;
+
+                historyGrid.appendChild(item);
+            });
+        }
+
+        // 页面加载时执行
+        window.addEventListener('load', () => {
+            loadStatistics();
+            loadHistory();
+        });
+    </script>
+</body>
+</html>
